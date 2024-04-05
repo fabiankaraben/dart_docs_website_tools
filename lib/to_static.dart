@@ -1,0 +1,2 @@
+///
+library to_static;

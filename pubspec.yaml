@@ -1,0 +1,20 @@
+name: dart_docs_website_tools
+description: A starting point for Dart libraries or applications.
+version: 1.0.0
+# repository: https://github.com/my_org/my_repo
+
+environment:
+  sdk: ^3.3.3
+
+# Add regular dependencies here.
+dependencies:
+  collection: ^1.18.0
+  hashlib: ^1.12.0
+  html: ^0.15.4
+  http: ^1.2.1
+  mime: ^1.0.5
+  path: ^1.9.0
+  
+dev_dependencies:
+  test: ^1.25.2
+  very_good_analysis: ^5.1.0

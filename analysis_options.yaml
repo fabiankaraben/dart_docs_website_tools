@@ -1,0 +1,21 @@
+# This file configures the static analysis results for your project (errors,
+# warnings, and lints).
+
+# For more information about the core and recommended set of lints, see
+# https://dart.dev/go/core-lints
+
+# For additional information about configuring this file, see
+# https://dart.dev/guides/language/analysis-options
+
+include: package:very_good_analysis/analysis_options.yaml
+analyzer:
+  errors:
+    invalid_annotation_target: ignore
+    avoid_positional_boolean_parameters: ignore
+    use_setters_to_change_properties: ignore
+    lines_longer_than_80_chars: ignore
+    missing_whitespace_between_adjacent_strings: ignore
+    one_member_abstracts: ignore
+  exclude:
+    - '**.freezed.dart'
+    - '**.g.dart'
