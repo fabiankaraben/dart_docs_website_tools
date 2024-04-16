@@ -4,9 +4,9 @@ import 'package:dart_docs_website_tools/src/utils/download_file.dart';
 import 'package:html/parser.dart';
 
 ///
-class GetUrlsFromMenus {
+class SourceMenuUrls {
   ///
-  Future<List<String>> fromWebsite({
+  Future<List<String>> getUrlsFromWebsite({
     /// Page full URL.
     required String url,
 
@@ -27,7 +27,7 @@ class GetUrlsFromMenus {
 
     while (pendingUrls.isNotEmpty) {
       final pageUrl = pendingUrls.removeLast();
-      final pageContentUrls = await fromPage(
+      final pageContentUrls = await getUrlsFromPage(
         url: pageUrl,
         menuContainerQuerySelectors: menuContainerQuerySelectors,
         extraIncludedHosts: extraIncludedHosts,
@@ -46,7 +46,7 @@ class GetUrlsFromMenus {
   }
 
   ///
-  Future<List<String>> fromPage({
+  Future<List<String>> getUrlsFromPage({
     /// Page full URL.
     required String url,
 
@@ -111,5 +111,14 @@ class GetUrlsFromMenus {
   ///
   List<String> toRootRelativeUrls(List<String> urls) {
     return urls;
+  }
+}
+
+///
+class SourcePageContent {
+  ///
+  static bool hasChanges(String url, String currentChecksum) {
+    // to do: download remote page and compare its checksums.
+    return true;
   }
 }
