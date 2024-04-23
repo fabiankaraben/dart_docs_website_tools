@@ -266,12 +266,13 @@ class ToStatic {
     required String sourceUrl,
     required String content,
     required String websiteDomain,
+    required String contentType,
   }) async {
     final staticHtmlFile = File(
       p.join(
         getSystemTempDirectoryPath(),
         tempDirSpaceName,
-        PathUtils.getStaticPath(sourceUrl, websiteDomain).substring(1),
+        PathUtils.getStaticPath(sourceUrl, websiteDomain, contentType).substring(1),
       ),
     );
     await staticHtmlFile.parent.create(recursive: true);
@@ -283,12 +284,13 @@ class ToStatic {
     required String sourceUrl,
     required Uint8List content,
     required String websiteDomain,
+    required String contentType,
   }) async {
     final staticFile = File(
       p.join(
         getSystemTempDirectoryPath(),
         tempDirSpaceName,
-        PathUtils.getStaticPath(sourceUrl, websiteDomain).substring(1),
+        PathUtils.getStaticPath(sourceUrl, websiteDomain, contentType).substring(1),
       ),
     );
     await staticFile.parent.create(recursive: true);

@@ -114,11 +114,25 @@ class PathUtils {
   ///
   static String getStaticPath(
     String sourceUrl,
-    String websiteDomain,
-  ) {
-    final uri = Uri.parse(sourceUrl);
+    String websiteDomain, [
+    String contentType = '',
+  ]) {
+    var uri = Uri.parse(sourceUrl);
 
-    if (!uri.hasFilename) return p.join(uri.path, 'index.html');
+    if (!uri.hasFilename && contentType.isNotEmpty) {
+      final typeExtension = contentType.split('/').last;
+      if (typeExtension == 'html') {
+        uri = uri.replace(path: p.join(uri.path, 'index.html'));
+      } else {
+        uri = uri.replace(path: '${uri.path}.$typeExtension');
+      }
+    }
+
+    if (uri.host.isNotEmpty && uri.host != websiteDomain) {
+      uri = uri.replace(
+        path: p.join('/external-0110010101110011', uri.host, uri.path.substring(1)),
+      );
+    }
 
     return uri.path;
   }
