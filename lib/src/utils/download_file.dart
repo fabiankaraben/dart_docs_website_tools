@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:dart_docs_website_tools/pkg/dart_docs_shared/utils/directory.dart';
 import 'package:dart_docs_website_tools/pkg/dart_docs_shared/utils/hash.dart';
 import 'package:dart_docs_website_tools/pkg/dart_docs_shared/utils/path.dart';
 import 'package:http/http.dart' as http;
@@ -9,36 +11,47 @@ import 'package:path/path.dart' as p;
 /// Downloads an HTML file or resource (js/css/image) retrying if
 /// necessary and checking for problematic cases.
 /// With local cache so that the same file is not downloaded twice in the same day.
-Future<Uint8List?> downloadFile(Uri uri) async {
+Future<(Uint8List?, String)> downloadFile(Uri uri, String spaceName) async {
   //
   // Local cached file posibility.
   //
   const cacheExpires = Duration(days: 1);
+  // const cacheExpires = Duration(seconds: 1);
 
-  final envVars = Platform.environment;
+  final tempDirPath = getSystemTempDirectoryPath();
+  if (tempDirPath.isEmpty) return (null, '');
 
-  late String tempDirPath;
-  if (Platform.isMacOS) {
-    tempDirPath = envVars['TMPDIR']!;
-  } else if (Platform.isLinux) {
-    tempDirPath = '/tmp';
-  } else {
-    return null;
-  }
-
-  final cacheDir = Directory(p.join(tempDirPath, 'esdocu'));
+  final cacheDir = Directory(p.join(tempDirPath, spaceName));
   if (!cacheDir.existsSync()) await cacheDir.create();
 
+  final checksum = createChecksum(uri.toString());
   final cachedFile = File(
-    p.join(cacheDir.path, createChecksum(uri.toString())),
+    p.join(cacheDir.path, checksum),
+  );
+  final cachedJsonFile = File(
+    p.join(cacheDir.path, '$checksum-response-headers.json'),
   );
 
   if (cachedFile.existsSync()) {
     if (DateTime.now().difference(cachedFile.lastModifiedSync()) > cacheExpires) {
+      await cachedJsonFile.delete();
       await cachedFile.delete();
     } else {
       print('downloadFile (cached): $uri');
-      return cachedFile.readAsBytes();
+      // final headers = Map<String, List<String>>.from(
+      //   jsonDecode(await cachedJsonFile.readAsString()) as Map<dynamic, dynamic>,
+      // );
+
+      final headers =
+          (jsonDecode(await cachedJsonFile.readAsString()) as Map<dynamic, dynamic>).map(
+        (key, value) => MapEntry(
+          key as String,
+          List<String>.from(value as List<dynamic>),
+        ),
+      );
+
+      final contentType = headers['content-type']!.first;
+      return (await cachedFile.readAsBytes(), contentType);
     }
   }
 
@@ -61,7 +74,15 @@ Future<Uint8List?> downloadFile(Uri uri) async {
           for (final bytes in await response.toList()) ...bytes,
         ]);
         await cachedFile.writeAsBytes(bodyBytes);
-        return bodyBytes;
+        final headers = <String, List<String>>{};
+        response.headers.forEach((name, values) => headers[name] = values);
+        await cachedJsonFile.writeAsString(jsonEncode(headers));
+
+        // print(jsonEncode(headers));
+        // print(response.headers['content-type'].runtimeType);
+        // print('---');
+
+        return (bodyBytes, headers['content-type']!.first);
       } else {
         // Try download image without archive.org URL part.
         final request = await client.getUrl(
@@ -76,14 +97,18 @@ Future<Uint8List?> downloadFile(Uri uri) async {
             for (final bytes in await response.toList()) ...bytes,
           ]);
           await cachedFile.writeAsBytes(bodyBytes);
-          return bodyBytes;
+          final headers = <String, List<String>>{};
+          response.headers.forEach((name, values) => headers[name] = values);
+          await cachedJsonFile.writeAsString(jsonEncode(headers));
+
+          return (bodyBytes, headers['content-type']!.first);
         }
       }
       break;
     } on http.ClientException {
       await Future<void>.delayed(const Duration(minutes: 1));
     } on SocketException {
-      return null;
+      return (null, '');
     } catch (e) {
       rethrow;
     } finally {
@@ -92,5 +117,5 @@ Future<Uint8List?> downloadFile(Uri uri) async {
     attemptCount++;
   }
 
-  return null;
+  return (null, '');
 }

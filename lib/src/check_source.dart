@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:dart_docs_website_tools/src/utils/download_file.dart';
 import 'package:html/parser.dart';
 
-///
+/// Verify remote content, detect new URLs and content changes.
 class SourceMenuUrls {
   ///
   Future<List<String>> getUrlsFromWebsite({
@@ -12,6 +12,11 @@ class SourceMenuUrls {
 
     /// CSS query selector of the each menu container.
     required List<String> menuContainerQuerySelectors,
+
+    /// Space name for System TEMP directory.
+    /// Ex.: 'esdocu' for '/tmp/esdocu' or 'esdocu/tech' for '/tmp/esdocu/tech'.
+
+    required String tempDirSpaceName,
 
     /// To include external hosts or subdomains.
     List<String> extraIncludedHosts = const <String>[],
@@ -32,6 +37,7 @@ class SourceMenuUrls {
         menuContainerQuerySelectors: menuContainerQuerySelectors,
         extraIncludedHosts: extraIncludedHosts,
         ignoredPaths: ignoredPaths,
+        tempDirSpaceName: tempDirSpaceName,
       );
 
       for (final pageContentUrl in pageContentUrls) {
@@ -53,6 +59,10 @@ class SourceMenuUrls {
     /// CSS query selector of the each menu container.
     required List<String> menuContainerQuerySelectors,
 
+    /// Space name for System TEMP directory.
+    /// Ex.: 'esdocu' for '/tmp/esdocu' or 'esdocu/tech' for '/tmp/esdocu/tech'.
+    required String tempDirSpaceName,
+
     /// To include external hosts or subdomains.
     List<String> extraIncludedHosts = const <String>[],
 
@@ -69,7 +79,7 @@ class SourceMenuUrls {
       ...extraIncludedHosts,
     ];
 
-    final bytes = await downloadFile(uri);
+    final (bytes, _) = await downloadFile(uri, tempDirSpaceName);
     if (bytes == null) return [];
 
     final html = utf8.decode(bytes);

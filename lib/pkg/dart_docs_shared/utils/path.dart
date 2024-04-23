@@ -1,3 +1,4 @@
+import 'package:dart_docs_website_tools/pkg/dart_docs_shared/extensions/uri.dart';
 import 'package:path/path.dart' as p;
 
 ///
@@ -108,6 +109,18 @@ class PathUtils {
     if (!removeFragmentPart) path = '$path$fragmentPart';
 
     return path;
+  }
+
+  ///
+  static String getStaticPath(
+    String sourceUrl,
+    String websiteDomain,
+  ) {
+    final uri = Uri.parse(sourceUrl);
+
+    if (!uri.hasFilename) return p.join(uri.path, 'index.html');
+
+    return uri.path;
   }
 
   ///

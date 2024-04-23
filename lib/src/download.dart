@@ -6,12 +6,37 @@ import 'package:html/dom.dart';
 import 'package:html/parser.dart';
 
 ///
+class RemotePageResource {
+  ///
+  const RemotePageResource({
+    required this.url,
+    required this.type,
+    required this.content,
+  });
+
+  ///
+  final String url;
+
+  ///
+  final String type;
+
+  ///
+  final Uint8List content;
+}
+
+/// Download pages and all their resources without editing anything.
 class SourceDownload {
   ///
-  Future<(String, String, Map<String, Uint8List>)> downloadFullPage(String url) async {
+  Future<(String, String, List<RemotePageResource>)> downloadFullPage(
+    String url,
+
+    /// Space name for System TEMP directory.
+    /// Ex.: 'esdocu' for '/tmp/esdocu' or 'esdocu/tech' for '/tmp/esdocu/tech'.
+    String tempDirSpaceName,
+  ) async {
     var pageContent = '';
     var pageTitle = '';
-    final resources = <String, Uint8List>{};
+    final resources = <RemotePageResource>[];
 
     if (!url.startsWith('http') && !url.startsWith('//')) {
       return (pageContent, pageTitle, resources);
@@ -19,7 +44,7 @@ class SourceDownload {
 
     final uri = Uri.parse(url);
 
-    final bytes = await downloadFile(uri);
+    final (bytes, _) = await downloadFile(uri, tempDirSpaceName);
     if (bytes == null) return (pageContent, pageTitle, resources);
 
     final html = utf8.decode(bytes);
@@ -34,6 +59,7 @@ class SourceDownload {
       await _downloadPageResources(
         document: document,
         pageUrl: url,
+        tempDirSpaceName: tempDirSpaceName,
       ),
     );
 
@@ -41,9 +67,13 @@ class SourceDownload {
   }
 
   /// Download all page resources: images, js, css, etc.
-  Future<Map<String, Uint8List>> _downloadPageResources({
+  Future<List<RemotePageResource>> _downloadPageResources({
     required Document document,
     required String pageUrl,
+
+    /// Space name for System TEMP directory.
+    /// Ex.: 'esdocu' for '/tmp/esdocu' or 'esdocu/tech' for '/tmp/esdocu/tech'.
+    required String tempDirSpaceName,
   }) async {
     final resourceUrls = <String>[];
 
@@ -83,11 +113,11 @@ class SourceDownload {
     for (final link in document.querySelectorAll('link')) {
       if ((link.attributes['href'] ?? '').trim().isEmpty) continue;
 
-      // print('--- LINK:');
+      // print('--- LINK: ${link.attributes['href']!}');
       resourceUrls.add(link.attributes['href']!);
     }
 
-    final resources = <String, Uint8List>{};
+    final resources = <RemotePageResource>[];
     final websiteDomain = Uri.parse(pageUrl).host;
 
     // Download all resources.
@@ -100,10 +130,18 @@ class SourceDownload {
       final remoteUrl = _completeRemoteSourcePath(resourceUrl, websiteDomain);
       final remoteSourceUri = Uri.parse(remoteUrl);
 
-      final resourceBytes = await downloadFile(remoteSourceUri);
+      if (remoteSourceUri.path.isEmpty || remoteSourceUri.path == '/') continue;
+
+      final (resourceBytes, contentType) = await downloadFile(remoteSourceUri, tempDirSpaceName);
 
       if (resourceBytes != null) {
-        resources[remoteUrl] = resourceBytes;
+        resources.add(
+          RemotePageResource(
+            url: remoteUrl,
+            type: contentType.split(';').first.trim(),
+            content: resourceBytes,
+          ),
+        );
       }
     }
 
