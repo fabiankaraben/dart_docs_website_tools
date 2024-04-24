@@ -36,7 +36,7 @@ class ToStatic {
     final sourceUri = Uri.parse(sourceUrl);
     final websiteDomain = sourceUri.host;
 
-    final pageRootRelativePath = sourceUri.path;
+    // final pageRootRelativePath = sourceUri.path;
 
     var html = content;
 
@@ -44,10 +44,10 @@ class ToStatic {
     html = _removeArchiveOrgWaybackFromRawHtml(html);
 
     // TEMP: this must be a Next.js plugin.
-    html = html.replaceFirst(
-      r'\"href\":\"/favicon.ico\"',
-      r'\"href\":\"/website-data-82361054/assets/favicon.ico\"',
-    );
+    // html = html.replaceFirst(
+    //   r'\"href\":\"/favicon.ico\"',
+    //   r'\"href\":\"/website-data-82361054/assets/favicon.ico\"',
+    // );
 
     final document = parse(html);
 
@@ -76,21 +76,25 @@ class ToStatic {
     // Clean images.
     for (final img in document.body!.querySelectorAll('img')) {
       if ((img.attributes['src'] ?? '').trim().isNotEmpty) {
-        final imgPath = PathUtils.getCleanImgPath(
-          img.attributes['src']!,
-          websiteDomain,
-          pageRootRelativePath,
+        final imgPath = PathUtils.getStaticPath(
+          sourceUrl: img.attributes['src']!,
+          websiteDomain: websiteDomain,
+          currentPageUrl: sourceUrl,
         );
         // print('imgPath: $imgPath');
 
-        img.attributes['src'] = '/website-data-82361054/assets$imgPath';
+        img.attributes['src'] = imgPath;
       }
 
       if ((img.attributes['srcset'] ?? '').trim().isNotEmpty) {
         img.attributes['srcset'] = img.attributes['srcset']!.split(',').map((e) {
           final srcParts = e.split(' ');
           final src = srcParts.first;
-          final imgPath = PathUtils.getCleanImgPath(src, websiteDomain, pageRootRelativePath);
+          final imgPath = PathUtils.getStaticPath(
+            sourceUrl: src,
+            websiteDomain: websiteDomain,
+            currentPageUrl: sourceUrl,
+          );
           return srcParts.length == 2 ? '$imgPath ${srcParts[1]}' : imgPath;
         }).join(', ');
       }
@@ -99,27 +103,27 @@ class ToStatic {
     for (final script in document.querySelectorAll('script')) {
       if ((script.attributes['src'] ?? '').isEmpty) continue;
 
-      final scriptPath = PathUtils.getCleanImgPath(
-        script.attributes['src']!,
-        websiteDomain,
-        pageRootRelativePath,
+      final scriptPath = PathUtils.getStaticPath(
+        sourceUrl: script.attributes['src']!,
+        websiteDomain: websiteDomain,
+        currentPageUrl: sourceUrl,
       );
 
       //
-      script.attributes['src'] = '/website-data-82361054/assets$scriptPath';
+      script.attributes['src'] = scriptPath;
     }
 
     for (final link in document.querySelectorAll('link')) {
       if ((link.attributes['href'] ?? '').isEmpty) continue;
 
-      final linkPath = PathUtils.getCleanImgPath(
-        link.attributes['href']!,
-        websiteDomain,
-        pageRootRelativePath,
+      final linkPath = PathUtils.getStaticPath(
+        sourceUrl: link.attributes['href']!,
+        websiteDomain: websiteDomain,
+        currentPageUrl: sourceUrl,
       );
 
       //
-      link.attributes['href'] = '/website-data-82361054/assets$linkPath';
+      link.attributes['href'] = linkPath;
     }
 
     return document.outerHtml;
@@ -166,7 +170,6 @@ class ToStatic {
   }) async {
     final sourceUri = Uri.parse(sourceUrl);
     final websiteDomain = sourceUri.host;
-    final pageRootRelativePath = sourceUri.path;
 
     var js = content;
 
@@ -175,14 +178,12 @@ class ToStatic {
       'n',
     );
 
-    // src:"/_next/static
-    // content = content.replaceAll(
-    //   'src:"/_next/static',
-    //   'src:"/website-data-82361054/assets/_next/static',
-    // );
     String replaceContentFunction(String input) {
-      final path = PathUtils.getCleanImgPath(input, websiteDomain, pageRootRelativePath);
-      return '/website-data-82361054/assets$path';
+      return PathUtils.getStaticPath(
+        sourceUrl: input,
+        websiteDomain: websiteDomain,
+        currentPageUrl: sourceUrl,
+      );
     }
 
     js = _replaceAll(
@@ -272,7 +273,11 @@ class ToStatic {
       p.join(
         getSystemTempDirectoryPath(),
         tempDirSpaceName,
-        PathUtils.getStaticPath(sourceUrl, websiteDomain, contentType).substring(1),
+        PathUtils.getStaticPath(
+          sourceUrl: sourceUrl,
+          websiteDomain: websiteDomain,
+          contentType: contentType,
+        ).substring(1),
       ),
     );
     await staticHtmlFile.parent.create(recursive: true);
@@ -290,7 +295,11 @@ class ToStatic {
       p.join(
         getSystemTempDirectoryPath(),
         tempDirSpaceName,
-        PathUtils.getStaticPath(sourceUrl, websiteDomain, contentType).substring(1),
+        PathUtils.getStaticPath(
+          sourceUrl: sourceUrl,
+          websiteDomain: websiteDomain,
+          contentType: contentType,
+        ).substring(1),
       ),
     );
     await staticFile.parent.create(recursive: true);

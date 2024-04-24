@@ -111,13 +111,33 @@ class PathUtils {
     return path;
   }
 
+  /// Convert a source URL (like an anchor href, image src, ...) to a root relative static path.
   ///
-  static String getStaticPath(
-    String sourceUrl,
-    String websiteDomain, [
+  /// Parameter [sourceUrl] can be absolute or relative.
+  /// Ex.: 'dog.jpg', '/images/dog.jpg', '/images', 'https://ex.com/images/dog.jpg', '#gallery'.
+  ///
+  /// Parameter [currentPageUrl] if is not empty, is used to complete relative paths.
+  /// Ex.: souceUrl = 'dog.jpg' and currentPageUrl = 'https://ex.com/images' to '/images/dog.jpg'.
+  /// Ex.: souceUrl = '#gallery' and currentPageUrl = 'https://ex.com/images' to '/images#gallery'.
+  /// Or currentPageUrl = '/images' or currentPageUrl = '/images/index.html'.
+  static String getStaticPath({
+    required String sourceUrl,
+    required String websiteDomain,
+    String currentPageUrl = '',
     String contentType = '',
-  ]) {
+  }) {
     var uri = Uri.parse(sourceUrl);
+
+    //
+    uri = uri.replace(
+      path: PathUtils.getCleanWebsiteRootRelativePath(
+        pathToConvert: sourceUrl,
+        websiteDomain: websiteDomain,
+        parentPagePath: currentPageUrl,
+        removeQueryPart: true,
+        removeFragmentPart: true,
+      ),
+    );
 
     if (!uri.hasFilename && contentType.isNotEmpty) {
       final typeExtension = contentType.split('/').last;
@@ -126,6 +146,11 @@ class PathUtils {
       } else {
         uri = uri.replace(path: '${uri.path}.$typeExtension');
       }
+    }
+
+    // For Next.js images.
+    if (uri.path == '/_next/image' && uri.queryParameters.containsKey('url')) {
+      uri = Uri.parse(uri.queryParameters['url']!);
     }
 
     if (uri.host.isNotEmpty && uri.host != websiteDomain) {
@@ -138,7 +163,7 @@ class PathUtils {
   }
 
   ///
-  static String getCleanImgPath(
+  static String getCleanImgPath2(
     String imgSrc,
     String websiteDomain,
     String pageRootRelativePathOrUrl,
